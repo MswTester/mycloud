@@ -6,6 +6,7 @@ export async function POST(request: Request) {
     const command = req.c
     const data:Data = req.d as Data
     const modifier:Data = req.m as Data
+    const file:File = req.f as File
     const database = client.db('mycloud')
     const col = database.collection('root')
     const bucket = new GridFSBucket(database)
@@ -30,18 +31,6 @@ export async function POST(request: Request) {
         case 'list': {
             const res = await col.find().toArray()
             return new Response(JSON.stringify({ok:true, data: res}))
-        }
-        case 'upload': {
-            const res = await bucket.openUploadStream(data.name, {metadata: data})
-            return new Response(JSON.stringify({ok:true, id: res.id}))
-        }
-        case 'download': {
-            const res = await bucket.openDownloadStream(new ObjectId(data._id))
-            return new Response(JSON.stringify({ok:true, data: res}))
-        }
-        case 'deletefile': {
-            const res = await bucket.delete(new ObjectId(data._id))
-            return new Response(JSON.stringify({ok:true}))
         }
         default: {
             return new Response(JSON.stringify({ok:false, error: 'Invalid command'}))

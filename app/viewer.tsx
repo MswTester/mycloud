@@ -211,7 +211,7 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                                 body: JSON.stringify({
                                     c: 'update',
                                     d: {_id:seld._id},
-                                    m: {content}
+                                    m: {content, modified: new Date()}
                                 })
                             }).then(res => res.json()).then(data => {
                                 setOnContent(false)
