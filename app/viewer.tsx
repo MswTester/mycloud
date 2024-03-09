@@ -223,7 +223,7 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                             let img = new Image()
                             img.src = content
                             img.onload = () => {
-                                ctx?.drawImage(img, 0, 0, 300, 300)
+                                ctx?.drawImage(img, 0, 0, canvas.width, canvas.height)
                             }
                         }
                     }}

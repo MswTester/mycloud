@@ -29,7 +29,7 @@ export async function POST(request: Request) {
             return new Response(JSON.stringify({ok:true, data: res}))
         }
         case 'list': {
-            const res = await col.find().toArray()
+            const res = await col.find({}, {projection: {content:0}}).toArray()
             return new Response(JSON.stringify({ok:true, data: res}))
         }
         default: {
