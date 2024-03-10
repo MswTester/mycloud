@@ -16,6 +16,7 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
     const [isFetching, setIsFetching] = useState(false)
     const [title, setTitle] = useState("")
     const [datatype, setDatatype] = useState("")
+    const [file, setFile] = useState<File | null>(null)
 
     useEffect(() => {
         setOnce(true)
