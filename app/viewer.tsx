@@ -51,6 +51,24 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
         }).catch(err => console.error(err))
     }
 
+    const uploadFile = async (file:File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        setIsFetching(true)
+        const response = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (response.ok) {
+            console.log('File uploaded successfully');
+        } else {
+            console.error('Upload failed');
+        }
+        setIsFetching(false)
+    }
+
     return <main className="flex min-h-screen flex-col items-center justify-between pl-40 pr-40 pt-20 pb-20 gap-3">
         <button
             disabled={isFetching}
@@ -200,6 +218,21 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                 </footer>
             </div>
         </div>}
+        <button className="fixed right-10 bottom-10 rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30 select-none cursor-pointer"
+        onClick={e => {
+            let file = document.createElement("input")
+            file.type = "file"
+            file.onchange = e => {
+                let reader = new FileReader()
+                reader.onload = e => {
+                    console.log((e.target as any).result)
+                    uploadFile((e.target as any).result)
+                }
+                reader.readAsDataURL((e.target as HTMLInputElement).files![0])
+            }
+            file.click()
+        }}
+        >test upload</button>
         {onContent && <div className="absolute w-full h-full left-0 top-0 bg-[#00000055] flex flex-row items-center justify-center"
         onMouseDown={e => {if(e.currentTarget == e.target) {
                 setOnContent(false)
