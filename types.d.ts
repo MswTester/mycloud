@@ -8,3 +8,10 @@ interface Data{
 }
 
 type Format = "text" | "img" | "json"
+
+
+interface FData{
+    _id?: string;
+    name: string;
+    
+}

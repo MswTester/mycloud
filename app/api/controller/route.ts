@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     const file:File = req.f as File
     const database = client.db('mycloud')
     const col = database.collection('root')
-    const bucket = new GridFSBucket(database)
+    const fcol = database.collection('files')
 
     switch(command){
         case 'create': {
@@ -32,6 +32,17 @@ export async function POST(request: Request) {
             const res = await col.find({}, {projection: {content:0}}).toArray()
             return new Response(JSON.stringify({ok:true, data: res}))
         }
+        case 'upload': {
+            const res = await fcol.insertOne({ ...data, _id: ObjectId.createFromTime(Date.now())})
+            return new Response(JSON.stringify({ok:true, id:res.insertedId}))
+        }
+        case 'download':{
+            const res = await fcol.findOne({_id: new ObjectId(data._id)})
+            return new Response(JSON.stringify({ok:true, data:res}))
+        }
+        // case 'remove':{
+        //     const res = await fcol.deleteOne()
+        // }
         default: {
             return new Response(JSON.stringify({ok:false, error: 'Invalid command'}))
         }
