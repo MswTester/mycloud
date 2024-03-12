@@ -1,17 +1,28 @@
 'use client';
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Viewer from "./viewer";
 
 const types:{[key:string]:string} = {
-  "JSON":"View DB as JSON object",
-  "File":"View DB as file system",
-  "Table":"View DB as table",
+  "Role":"Create & Manage Roles",
+  "File":"Upload & Download Files",
+  "Table":"Create & Manage Tables",
 }
 
 export default function Home() {
+  const [once, setOnce] = useState<boolean>(false); // [1]
   const [state, setState] = useState<string>("");
+  const [role, setRole] = useState<Role|null>(null);
+
+  useEffect(() => {
+    setOnce(true);
+  }, []);
+
+  useEffect(() => {
+    if (once) {
+    }
+  }, [once]);
 
   return state == "" ? (
     <main className="flex w-full min-h-screen flex-col items-center justify-between p-24">
@@ -72,6 +83,6 @@ export default function Home() {
       </div>
     </main>
   ) : (
-    <Viewer state={state} setState={setState}/>
+    <Viewer state={state} setState={setState} role={role} setRole={setRole}/>
   );
 }

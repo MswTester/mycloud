@@ -4,7 +4,7 @@ import { Dispatch, SetStateAction, useEffect, useState } from "react"
 
 const masterPassword = "master"
 
-export default function Viewer(props: {state: string, setState: Dispatch<SetStateAction<string>>}){
+export default function Viewer(props: {state: string, setState: Dispatch<SetStateAction<string>>, role: Role|null, setRole: Dispatch<SetStateAction<Role|null>>}){
     const [once, setOnce] = useState(false)
     const [data, setData] = useState<Data[]>([])
     const [onWindow, setOnWindow] = useState(false)
@@ -23,12 +23,12 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
     const [r, setR] = useState<number>(-1)
     const [passErrMsg, setPassErrMsg] = useState("")
     const [updPass, setUpdPass] = useState("")
-    const [passWork, setPassWork] = useState<"update"|"remove">("update")
+    const [passWork, setPassWork] = useState<"update"|"delete">("update")
     
     const resizeTextarea = () => {
         const textareas:NodeListOf<HTMLTextAreaElement> = document.querySelectorAll('textarea');
         for (let i = 0; i < textareas.length; i++) {
-            textareas[i].rows = Math.round(window.innerHeight / 60)
+            textareas[i].rows = Math.round(window.innerHeight / 80)
             textareas[i].cols = Math.round(window.innerWidth / 20)
         }
     }
@@ -55,11 +55,14 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
             resizeTextarea()
         }
     }, [onContent])
+
+    useEffect(() => {
+        resizeTextarea()
+    }, [datatype])
     
     useEffect(() => {
         if(once){
             reload()
-            // 로드 시 및 화면 크기 변경 시 함수 호출
             window.onload = resizeTextarea;
             window.onresize = resizeTextarea;
         }
@@ -156,6 +159,7 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                             if((e.target as Element).nodeName == e.currentTarget.nodeName){
                                 if(d.password){
                                     setOnPassword(true)
+                                    setPassWork("update")
                                     setR(i)
                                 } else {
                                     setIsFetching(true)
@@ -181,8 +185,8 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                             }
                         }}
                         >
-                        <div className="flex-1 whitespace-nowrap text-ellipsis overflow-hidden">{d.name}</div>
-                        <div className="flex-1">{d.format}</div>
+                        <div className="flex-1 whitespace-nowrap text-ellipsis overflow-hidden">{d.password && '🔒 '}{d.name}</div>
+                        <div className="flex-1">{d.format.toUpperCase()}</div>
                         <div className="flex-1">{new Date(d.created).toLocaleDateString()}</div>
                         <div className="flex-1">{new Date(d.modified).toLocaleDateString()}</div>
                         <div className="flex-1 flex flex-row items-center justify-center gap-3">
@@ -191,6 +195,7 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                             onClick={e => {
                                 if(d.password){
                                     setOnPassword(true)
+                                    setPassWork("delete")
                                     setR(i)
                                 } else {
                                     setIsFetching(true)
@@ -273,7 +278,7 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                 <input className="text-center text-2xl font-semibold rounded-md p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 focus:outline-none transition-colors"
                 type="text" name="" id="" value={title} onChange={e => setTitle(e.target.value)} />
                 <select className="w-full rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors"
-                onChange={e => setDatatype(e.target.value as Format)} value={datatype}>
+                onChange={e => {setDatatype(e.target.value as Format);}} value={datatype}>
                     <option value="text">Text</option>
                     <option value="img">Image</option>
                     <option value="json">JSON</option>
@@ -288,6 +293,7 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                         if(canvas){
                             let ctx = canvas.getContext("2d")
                             let img = new Image()
+                            console.log(content.length)
                             img.src = content
                             img.onload = () => {
                                 ctx?.drawImage(img, 0, 0, canvas.width, canvas.height)
@@ -311,7 +317,7 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                     datatype == "json" ? <textarea className="w-full rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors"
                     name="" id="" value={content}
                     onChange={e => setContent(e.target.value)}/>:
-                    <textarea className="rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors"
+                    <textarea className="w-full rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors"
                     name="" id="" value={content}
                     onChange={e => setContent(e.target.value)}/>
                 }
@@ -357,7 +363,6 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
         {onPassword && <div className="absolute w-full h-full left-0 top-0 bg-[#00000055] flex flex-row items-center justify-center"
         onMouseDown={e => {if(e.currentTarget == e.target) setOnPassword(false)}}>
             <div className="bg-white dark:bg-neutral-800 rounded-lg p-10 flex flex-col items-center justify-between gap-5">
-                <h2 className="text-2xl font-semibold">Input password to open</h2>
                 <input className="w-full rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" type="password" name="" id="" placeholder="Password"
                 onChange={e => {setPassword(e.target.value);setPassErrMsg("")}} value={password}/>
                 <p className="text-red-500">{passErrMsg}</p>
@@ -386,28 +391,33 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                                         "Content-Type": "application/json"
                                     },
                                     body: JSON.stringify({
-                                        c: 'read',
+                                        c: passWork == "update" ? 'read' : 'delete',
                                         d: {_id: tar._id}
                                     })
                                 }).then(res => res.json()).then(data => {
                                     setIsFetching(false)
-                                    setContent(data.data.content)
-                                    setTitle(data.data.name)
-                                    setDatatype(data.data.format)
-                                    setUpdPass(data.data.password)
-                                    setOnContent(true)
                                     setSelectedData(r)
                                     setOnPassword(false)
                                     setR(-1)
                                     setPassword("")
                                     setPassErrMsg("")
+                                    setPassWork("update")
+                                    if(passWork == "update"){
+                                        setContent(data.data.content)
+                                        setTitle(data.data.name)
+                                        setDatatype(data.data.format)
+                                        setUpdPass(data.data.password)
+                                        setOnContent(true)
+                                    } else {
+                                        reload()
+                                    }
                                 }).catch(err => console.error(err))
                             } else {
                                 setPassErrMsg("Password is incorrect")
                             }
                         }}
                     >
-                        Open
+                        {passWork == "update" ? "Open" : "Delete"}
                     </button>
                 </footer>
             </div>
