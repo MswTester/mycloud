@@ -41,9 +41,17 @@ export async function POST(request: Request) {
             const res = await files.findOne({_id: new ObjectId(data._id)})
             return new Response(JSON.stringify({ok:true, data:res}))
         }
-        case 'remove':{
+        case 'deleteFile':{
             const res = await files.deleteOne({_id: new ObjectId(data._id)})
             return new Response(JSON.stringify({ok:true}))
+        }
+        case 'deleteFolder':{
+            const res = await folders.deleteOne({_id: new ObjectId(data._id)})
+            return new Response(JSON.stringify({ok:true}))
+        }
+        case 'makeFolder':{
+            const res = await folders.insertOne({ ...data, _id: ObjectId.createFromTime(Date.now())})
+            return new Response(JSON.stringify({ok:true, id:res.insertedId}))
         }
         case 'getTree':{
             let fileRes = await files.find({}, {projection: {base64:0}}).toArray()

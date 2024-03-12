@@ -1,8 +1,7 @@
 'use client'
 
 import { Dispatch, SetStateAction, useEffect, useState } from "react"
-
-const masterPassword = "master"
+import {masterPassword} from './page'
 
 export default function Viewer(props: {state: string, setState: Dispatch<SetStateAction<string>>, role: Role|null, setRole: Dispatch<SetStateAction<Role|null>>}){
     const [once, setOnce] = useState(false)
@@ -24,6 +23,15 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
     const [passErrMsg, setPassErrMsg] = useState("")
     const [updPass, setUpdPass] = useState("")
     const [passWork, setPassWork] = useState<"update"|"delete">("update")
+
+    const [f_format, setF_format] = useState<boolean>(false)
+    const [f_cdate, setF_cdate] = useState<boolean>(false)
+    const [f_mdate, setF_mdate] = useState<boolean>(false)
+    const [f_format1, setF_format1] = useState<Format>("text")
+    const [f_cdate1, setF_cdate1] = useState<string>("")
+    const [f_cdate2, setF_cdate2] = useState<string>("")
+    const [f_mdate1, setF_mdate1] = useState<string>("")
+    const [f_mdate2, setF_mdate2] = useState<string>("")
     
     const resizeTextarea = () => {
         const textareas:NodeListOf<HTMLTextAreaElement> = document.querySelectorAll('textarea');
@@ -88,21 +96,6 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
         }).catch(err => console.error(err))
     }
 
-    const openFile = () => {
-        let file = document.createElement("input")
-        file.type = "file"
-        file.onchange = e => {
-            let reader = new FileReader()
-            let tar = (e.target as HTMLInputElement).files![0]
-            reader.onload = e => {
-                let base64 = (e.target as any).result
-                console.log(base64, tar)
-            }
-            reader.readAsDataURL(tar)
-        }
-        file.click()
-    }
-
     return <main className="flex flex-col items-center justify-between gap-3" style={{width:'80%', height:'80%', minWidth:'min(100%, 800px)'}}>
         <button
             disabled={isFetching}
@@ -122,18 +115,18 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
             <button
                 disabled={isFetching}
                 className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                onClick={e => setOnFilter(onFilter => !onFilter)}
+                onClick={reload}
             >
-                Filter
+                Refresh
             </button>
             <input className="flex-[8] rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-300 font-semibold focus:outline-none text-lg transition-colors" type="text" name="" id="" placeholder="Search"
             onChange={e => setSearch(e.target.value)} value={search} style={{minWidth: 'min(100%, 100px)'}}/>
             <button
                 disabled={isFetching}
                 className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                onClick={reload}
+                onClick={e => setOnFilter(onFilter => !onFilter)}
             >
-                Refresh
+                Filter
             </button>
             <button
                 disabled={isFetching}
@@ -147,27 +140,32 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
         {/* Filter */}
         {onFilter && <div className="w-full flex flex-row items-center justify-center gap-3">
             <div className="flex-1 flex flex-row gap-2 justify-center items-center">
-                <input type="checkbox" name="" id="format" className="w-6 h-6 rounded-xl"/>
+                <input type="checkbox" name="" id="format" className="w-6 h-6 rounded-xl" checked={f_format} onChange={e => setF_format(e.target.checked)}/>
                 <label htmlFor="format" className="text-lg font-semibold select-none">Format</label>
-                <select name="" id="" className="rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors">
+                <select name="" id="" className="rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors"
+                value={f_format1} onChange={e => setF_format1(e.target.value as Format)}>
                     <option value="text">Text</option>
                     <option value="img">Image</option>
                     <option value="json">JSON</option>
                 </select>
             </div>
             <div className="flex-1 flex flex-row gap-2 justify-center items-center">
-                <input type="checkbox" name="" id="cdate" className="w-6 h-6 rounded-xl"/>
+                <input type="checkbox" name="" id="cdate" className="w-6 h-6 rounded-xl" checked={f_cdate} onChange={e => setF_cdate(e.target.checked)}/>
                 <label htmlFor="cdate" className="text-lg font-semibold select-none">Created</label>
-                <input type="date" className="rounded-md bg p-1 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" />
+                <input type="date" className="rounded-md bg p-1 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors"
+                value={f_cdate1} onChange={e => setF_cdate1(e.target.value)}/>
                 <h2 className="text-lg font-semibold select-none">~</h2>
-                <input type="date" className="rounded-md bg p-1 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" />
+                <input type="date" className="rounded-md bg p-1 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" 
+                value={f_cdate2} onChange={e => setF_cdate2(e.target.value)}/>
             </div>
             <div className="flex-1 flex flex-row gap-2 justify-center items-center">
-                <input type="checkbox" name="" id="cdate" className="w-6 h-6 rounded-xl"/>
+                <input type="checkbox" name="" id="cdate" className="w-6 h-6 rounded-xl" checked={f_mdate} onChange={e => setF_mdate(e.target.checked)}/>
                 <label htmlFor="cdate" className="text-lg font-semibold select-none">Modified</label>
-                <input type="date" className="rounded-md bg p-1 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" />
+                <input type="date" className="rounded-md bg p-1 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors"
+                value={f_mdate1} onChange={e => setF_mdate1(e.target.value)}/>
                 <h2 className="text-lg font-semibold select-none">~</h2>
-                <input type="date" className="rounded-md bg p-1 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" />
+                <input type="date" className="rounded-md bg p-1 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors"
+                value={f_mdate2} onChange={e => setF_mdate2(e.target.value)}/>
             </div>
         </div>}
 
@@ -183,6 +181,9 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
             <div className="w-full h-full flex-1 overflow-y-auto">
                 {data.map((d, i) => {
                     if(!d.name.toLowerCase().includes(search.toLowerCase())) return null
+                    if(f_format && d.format != f_format1) return null
+                    if(f_cdate && (new Date(d.created).getTime() < new Date(f_cdate1).getTime() || new Date(d.created).getTime() >= new Date(f_cdate2).getTime())) return null
+                    if(f_mdate && (new Date(d.modified).getTime() < new Date(f_mdate1).getTime() || new Date(d.modified).getTime() >= new Date(f_mdate2).getTime())) return null
                     return <div key={i}
                     className="w-full flex flex-row items-center justify-between text-center cursor-pointer hover:bg-gray-100 hover:dark:bg-neutral-800 transition-colors p-2"
                     onClick={e => {
@@ -286,7 +287,7 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                                 },
                                 body: JSON.stringify({
                                     c: 'create',
-                                    d: {name, format, created: new Date(), modified: new Date(), content:"", password}
+                                    d: {name, format, created: new Date(), modified: new Date(), content:"", password, role: []}
                                 })
                             }).then(res => res.json()).then(data => {
                                 setIsFetching(false)

@@ -3,6 +3,9 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import Viewer from "./viewer";
+import Explorer from "./explorer";
+
+export const masterPassword = "master";
 
 const types:{[key:string]:string} = {
   "Role":"Create & Manage Roles",
@@ -67,7 +70,7 @@ export default function Home() {
         <div
           key={i}
           className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30 select-none cursor-pointer"
-          onClick={() => setState(type)}
+          onClick={() => setState(type.toLowerCase())}
         >
           <h2 className={`mb-3 text-2xl font-semibold`}>
             {`${type} `}
@@ -82,7 +85,11 @@ export default function Home() {
         ))}
       </div>
     </main>
-  ) : (
+  ) : state == "role" ? (
+    <></>
+  ) : state == "file" ? (
+    <Explorer state={state} setState={setState} role={role} setRole={setRole}/>
+  ) : state == "table" ? (
     <Viewer state={state} setState={setState} role={role} setRole={setRole}/>
-  );
+  ) : <></>;
 }

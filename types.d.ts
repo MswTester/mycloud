@@ -14,7 +14,7 @@ type Format = "text" | "img" | "json"
 interface FileData{
     _id?: string;
     name: string;
-    route: string;
+    path: string;
     size: number;
     base64: string;
     created: number;
@@ -25,7 +25,7 @@ interface FileData{
 interface FolderData{
     _id?: string;
     name: string;
-    route: string;
+    path: string;
     created: number;
     password: string;
     roles: string[];
