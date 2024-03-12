@@ -6,43 +6,62 @@ export async function POST(request: Request) {
     const command = req.c
     const data:Data = req.d as Data
     const modifier:Data = req.m as Data
-    const file:File = req.f as File
     const database = client.db('mycloud')
-    const col = database.collection('root')
-    const fcol = database.collection('files')
+    const root = database.collection('root')
+    const files = database.collection('files')
+    const folders = database.collection('folders')
+    const roles = database.collection('roles')
 
     switch(command){
         case 'create': {
-            const res = await col.insertOne({ ...data, _id: ObjectId.createFromTime(Date.now()) });
+            const res = await root.insertOne({ ...data, _id: ObjectId.createFromTime(Date.now()) });
             return new Response(JSON.stringify({ok:true, id: res.insertedId}));
         }
         case 'update': {
-            const res = await col.updateOne({_id: new ObjectId(data._id)}, {$set: modifier})
+            const res = await root.updateOne({_id: new ObjectId(data._id)}, {$set: modifier})
             return new Response(JSON.stringify({ok:true, data:res}))
         }
         case 'delete': {
-            const res = await col.deleteOne({_id: new ObjectId(data._id)})
+            const res = await root.deleteOne({_id: new ObjectId(data._id)})
             return new Response(JSON.stringify({ok:true}))
         }
         case 'read': {
-            const res = await col.findOne({_id: new ObjectId(data._id)})
+            const res = await root.findOne({_id: new ObjectId(data._id)})
             return new Response(JSON.stringify({ok:true, data: res}))
         }
         case 'list': {
-            const res = await col.find({}, {projection: {content:0}}).toArray()
+            const res = await root.find({}, {projection: {content:0}}).toArray()
             return new Response(JSON.stringify({ok:true, data: res}))
         }
         case 'upload': {
-            const res = await fcol.insertOne({ ...data, _id: ObjectId.createFromTime(Date.now())})
+            const res = await files.insertOne({ ...data, _id: ObjectId.createFromTime(Date.now())})
             return new Response(JSON.stringify({ok:true, id:res.insertedId}))
         }
         case 'download':{
-            const res = await fcol.findOne({_id: new ObjectId(data._id)})
+            const res = await files.findOne({_id: new ObjectId(data._id)})
             return new Response(JSON.stringify({ok:true, data:res}))
         }
-        // case 'remove':{
-        //     const res = await fcol.deleteOne()
-        // }
+        case 'remove':{
+            const res = await files.deleteOne({_id: new ObjectId(data._id)})
+            return new Response(JSON.stringify({ok:true}))
+        }
+        case 'getTree':{
+            let fileRes = await files.find({}, {projection: {base64:0}}).toArray()
+            let folderRes = await folders.find({}).toArray()
+            return new Response(JSON.stringify({ok:true, data:{files:fileRes, folders:folderRes}}))
+        }
+        case 'makeRole':{
+            const res = await roles.insertOne({ ...data, _id: ObjectId.createFromTime(Date.now())})
+            return new Response(JSON.stringify({ok:true, id:res.insertedId}))
+        }
+        case 'deleteRole':{
+            const res = await roles.deleteOne({_id: new ObjectId(data._id)})
+            return new Response(JSON.stringify({ok:true}))
+        }
+        case 'listRoles':{
+            const res = await roles.find({}, {projection: {password:0}}).toArray()
+            return new Response(JSON.stringify({ok:true, data:res}))
+        }
         default: {
             return new Response(JSON.stringify({ok:false, error: 'Invalid command'}))
         }
