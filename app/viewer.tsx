@@ -116,11 +116,13 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                 Back
           </h2>
         </button>
+
+        {/* Nav */}
         <nav className="flex flex-row justify-between w-full gap-5">
             <button
                 disabled={isFetching}
                 className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                onClick={e => setOnFilter(true)}
+                onClick={e => setOnFilter(onFilter => !onFilter)}
             >
                 Filter
             </button>
@@ -141,86 +143,115 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                 Add New
             </button>
         </nav>
-        {
-            <div className="w-full h-full flex-1 rounded-md border border-1 border-gray-400 dark:border-neutral-700 flex flex-col items-center justify-between">
-                <nav className="w-full flex flex-row items-center justify-between text-center p-3 font-semibold text-lg border-b border-b-1 border-b-gray-400 dark:border-b-neutral-700">
-                    <div className="flex-1">Name</div>
-                    <div className="flex-1">Format</div>
-                    <div className="flex-1">Created</div>
-                    <div className="flex-1">Modified</div>
-                    <div className="flex-1"></div>
-                </nav>
-                <div className="w-full h-full flex-1 overflow-y-auto">
-                    {data.map((d, i) => {
-                        if(!d.name.toLowerCase().includes(search.toLowerCase())) return null
-                        return <div key={i}
-                        className="w-full flex flex-row items-center justify-between text-center cursor-pointer hover:bg-gray-100 hover:dark:bg-neutral-800 transition-colors p-2"
-                        onClick={e => {
-                            if((e.target as Element).nodeName == e.currentTarget.nodeName){
-                                if(d.password){
-                                    setOnPassword(true)
-                                    setPassWork("update")
-                                    setR(i)
-                                } else {
-                                    setIsFetching(true)
-                                    fetch("/api/controller", {
-                                        method: "POST",
-                                        headers: {
-                                            "Content-Type": "application/json"
-                                        },
-                                        body: JSON.stringify({
-                                            c: 'read',
-                                            d: {_id: d._id}
-                                        })
-                                    }).then(res => res.json()).then(data => {
-                                        setIsFetching(false)
-                                        setContent(data.data.content)
-                                        setTitle(data.data.name)
-                                        setDatatype(data.data.format)
-                                        setUpdPass(data.data.password)
-                                        setOnContent(true)
-                                        setSelectedData(i)
-                                    }).catch(err => console.error(err))
-                                }
-                            }
-                        }}
-                        >
-                        <div className="flex-1 whitespace-nowrap text-ellipsis overflow-hidden">{d.password && '🔒 '}{d.name}</div>
-                        <div className="flex-1">{d.format.toUpperCase()}</div>
-                        <div className="flex-1">{new Date(d.created).toLocaleDateString()}</div>
-                        <div className="flex-1">{new Date(d.modified).toLocaleDateString()}</div>
-                        <div className="flex-1 flex flex-row items-center justify-center gap-3">
-                            <button className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-2 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                            disabled={isFetching}
-                            onClick={e => {
-                                if(d.password){
-                                    setOnPassword(true)
-                                    setPassWork("delete")
-                                    setR(i)
-                                } else {
-                                    setIsFetching(true)
-                                    fetch("/api/controller", {
-                                        method: "POST",
-                                        headers: {
-                                            "Content-Type": "application/json"
-                                        },
-                                        body: JSON.stringify({
-                                            c: 'delete',
-                                            d: {_id: d._id}
-                                        })
-                                    }).then(res => res.json()).then(data => {
-                                        setIsFetching(false)
-                                        reload()
-                                    }).catch(err => console.error(err))
-                                }
-                            }}>
-                                Remove
-                            </button>
-                        </div>
-                    </div>})}
-                </div>
+
+        {/* Filter */}
+        {onFilter && <div className="w-full flex flex-row items-center justify-center gap-3">
+            <div className="flex-1 flex flex-row gap-2 justify-center items-center">
+                <input type="checkbox" name="" id="format" className="w-6 h-6 rounded-xl"/>
+                <label htmlFor="format" className="text-lg font-semibold select-none">Format</label>
+                <select name="" id="" className="rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors">
+                    <option value="text">Text</option>
+                    <option value="img">Image</option>
+                    <option value="json">JSON</option>
+                </select>
             </div>
-        }
+            <div className="flex-1 flex flex-row gap-2 justify-center items-center">
+                <input type="checkbox" name="" id="cdate" className="w-6 h-6 rounded-xl"/>
+                <label htmlFor="cdate" className="text-lg font-semibold select-none">Created</label>
+                <input type="date" className="rounded-md bg p-1 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" />
+                <h2 className="text-lg font-semibold select-none">~</h2>
+                <input type="date" className="rounded-md bg p-1 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" />
+            </div>
+            <div className="flex-1 flex flex-row gap-2 justify-center items-center">
+                <input type="checkbox" name="" id="cdate" className="w-6 h-6 rounded-xl"/>
+                <label htmlFor="cdate" className="text-lg font-semibold select-none">Modified</label>
+                <input type="date" className="rounded-md bg p-1 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" />
+                <h2 className="text-lg font-semibold select-none">~</h2>
+                <input type="date" className="rounded-md bg p-1 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" />
+            </div>
+        </div>}
+
+        {/* Table */}
+        <div className="w-full h-full flex-1 rounded-md border border-1 border-gray-400 dark:border-neutral-700 flex flex-col items-center justify-between">
+            <nav className="w-full flex flex-row items-center justify-between text-center p-3 font-semibold text-lg border-b border-b-1 border-b-gray-400 dark:border-b-neutral-700">
+                <div className="flex-1">Name</div>
+                <div className="flex-1">Format</div>
+                <div className="flex-1">Created</div>
+                <div className="flex-1">Modified</div>
+                <div className="flex-1"></div>
+            </nav>
+            <div className="w-full h-full flex-1 overflow-y-auto">
+                {data.map((d, i) => {
+                    if(!d.name.toLowerCase().includes(search.toLowerCase())) return null
+                    return <div key={i}
+                    className="w-full flex flex-row items-center justify-between text-center cursor-pointer hover:bg-gray-100 hover:dark:bg-neutral-800 transition-colors p-2"
+                    onClick={e => {
+                        if((e.target as Element).nodeName == e.currentTarget.nodeName){
+                            if(d.password){
+                                setOnPassword(true)
+                                setPassWork("update")
+                                setR(i)
+                            } else {
+                                setIsFetching(true)
+                                fetch("/api/controller", {
+                                    method: "POST",
+                                    headers: {
+                                        "Content-Type": "application/json"
+                                    },
+                                    body: JSON.stringify({
+                                        c: 'read',
+                                        d: {_id: d._id}
+                                    })
+                                }).then(res => res.json()).then(data => {
+                                    setIsFetching(false)
+                                    setContent(data.data.content)
+                                    setTitle(data.data.name)
+                                    setDatatype(data.data.format)
+                                    setUpdPass(data.data.password)
+                                    setOnContent(true)
+                                    setSelectedData(i)
+                                }).catch(err => console.error(err))
+                            }
+                        }
+                    }}
+                    >
+                    <div className="flex-1 whitespace-nowrap text-ellipsis overflow-hidden">{d.password && '🔒 '}{d.name}</div>
+                    <div className="flex-1">{d.format.toUpperCase()}</div>
+                    <div className="flex-1">{new Date(d.created).toLocaleDateString()}</div>
+                    <div className="flex-1">{new Date(d.modified).toLocaleDateString()}</div>
+                    <div className="flex-1 flex flex-row items-center justify-center gap-3">
+                        <button className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-2 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={isFetching}
+                        onClick={e => {
+                            if(d.password){
+                                setOnPassword(true)
+                                setPassWork("delete")
+                                setR(i)
+                            } else {
+                                setIsFetching(true)
+                                fetch("/api/controller", {
+                                    method: "POST",
+                                    headers: {
+                                        "Content-Type": "application/json"
+                                    },
+                                    body: JSON.stringify({
+                                        c: 'delete',
+                                        d: {_id: d._id}
+                                    })
+                                }).then(res => res.json()).then(data => {
+                                    setIsFetching(false)
+                                    reload()
+                                }).catch(err => console.error(err))
+                            }
+                        }}>
+                            Remove
+                        </button>
+                    </div>
+                </div>})}
+            </div>
+        </div>
+
+        {/* Creation Window */}
         {onWindow && <div className="absolute w-full h-full left-0 top-0 bg-[#00000055] flex flex-row items-center justify-center"
         onMouseDown={e => {if(e.currentTarget == e.target) setOnWindow(false)}}>
             <div className="bg-white dark:bg-neutral-800 rounded-lg p-10 flex flex-col items-center justify-between gap-5">
@@ -269,6 +300,8 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                 </footer>
             </div>
         </div>}
+
+        {/* Content Window */}
         {onContent && <div className="absolute w-full h-full left-0 top-0 bg-[#00000055] flex flex-row items-center justify-center"
         onMouseDown={e => {if(e.currentTarget == e.target) {
                 setOnContent(false)
@@ -360,6 +393,8 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                 </footer>
             </div>
         </div>}
+
+        {/* Password Window */}
         {onPassword && <div className="absolute w-full h-full left-0 top-0 bg-[#00000055] flex flex-row items-center justify-center"
         onMouseDown={e => {if(e.currentTarget == e.target) setOnPassword(false)}}>
             <div className="bg-white dark:bg-neutral-800 rounded-lg p-10 flex flex-col items-center justify-between gap-5">
