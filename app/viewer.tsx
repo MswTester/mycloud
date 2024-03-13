@@ -1,7 +1,6 @@
 'use client'
 
 import { Dispatch, SetStateAction, useEffect, useState } from "react"
-import {masterPassword} from './page'
 
 export default function Viewer(props: {state: string, setState: Dispatch<SetStateAction<string>>, role: Role|null, setRole: Dispatch<SetStateAction<Role|null>>}){
     const [once, setOnce] = useState(false)
@@ -419,7 +418,7 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                         className="flex-1 rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                         onClick={e => {
                             let tar = data[r]
-                            if(password == tar.password || password == masterPassword){
+                            if(password == tar.password || (process.env.masterPassword && password == process.env.masterPassword)){
                                 setIsFetching(true)
                                 fetch("/api/controller", {
                                     method: "POST",

@@ -5,8 +5,6 @@ import { useEffect, useState } from "react";
 import Viewer from "./viewer";
 import Explorer from "./explorer";
 
-export const masterPassword = "master";
-
 const types:{[key:string]:string} = {
   "Role":"Create & Manage Roles",
   "File":"Upload & Download Files",

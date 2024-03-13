@@ -110,6 +110,24 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
             </button>
         </nav>
 
+        {/* Path Controller */}
+        <nav className="w-full flex flex-row items-center justify-center">
+            <button
+                disabled={isFetching}
+                className="rounded-lg border border-transparent p-2 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30 select-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={e => setPath('/')}>
+                /
+            </button>
+            {path.split('/').filter(v => v).map((v, i, arr) => (
+                <button key={i}
+                    disabled={isFetching}
+                    className="rounded-lg border border-transparent p-2 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30 select-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                    onClick={e => setPath('/' + arr.slice(0, i+1).join('/') + '/')}>
+                    {v}/
+                </button>
+            ))}
+        </nav>
+
         {/* File Explorer */}
         <div className="w-full h-full flex-1 rounded-md border border-1 border-gray-400 dark:border-neutral-700 flex flex-col items-center justify-between">
             <nav className="w-full flex flex-row items-center justify-between text-center p-3 font-semibold text-lg border-b border-b-1 border-b-gray-400 dark:border-b-neutral-700">
@@ -121,11 +139,11 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
             <div className="w-full h-full flex-1 overflow-y-auto">
                 {folders.filter(v => v.path == path).map((v, i) => (
                     <div key={i} className="w-full flex flex-row items-center justify-between text-center cursor-pointer hover:bg-gray-100 hover:dark:bg-neutral-800 transition-colors p-2"
-                    onClick={e => setPath(v.path)}>
+                    onClick={e => {if((e.target as Element).nodeName == e.currentTarget.nodeName) setPath(v.path + v.name + '/')}}>
                         <div className="flex-1">{v.name}</div>
-                        <div className="flex-1">{getSize(files.filter(f => f.path.startsWith(v.path)).reduce((a, b) => a + b.size, 0))}</div>
-                        <div className="flex-1">{new Date(v.created).toLocaleString()}</div>
-                        <div className="flex-1">
+                        <div className="flex-1">{getSize(files.filter(f => f.path.startsWith(v.path + v.name + '/')).reduce((a, b) => a + b.size, 0))}</div>
+                        <div className="flex-1">{new Date(v.created).toLocaleDateString()}</div>
+                        <div className="flex-1 gap-2 flex flex-row items-center justify-center">
                             <button
                                 disabled={isFetching}
                                 className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
@@ -137,16 +155,18 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                                 disabled={isFetching}
                                 className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                                 onClick={e => {
-                                    setIsFetching(true)
-                                    fetch('/api/controller', {
-                                        method: 'POST',
-                                        body: JSON.stringify({c: 'deleteFolder', d: {_id:v._id}})
-                                    }).then(res => res.json()).then(data => {
-                                        setIsFetching(false)
-                                        if(data.ok){
-                                            reload()
-                                        }
-                                    })
+                                    if(e.currentTarget == e.target){
+                                        setIsFetching(true)
+                                        fetch('/api/controller', {
+                                            method: 'POST',
+                                            body: JSON.stringify({c: 'deleteFolder', d: {_id:v._id}})
+                                        }).then(res => res.json()).then(data => {
+                                            setIsFetching(false)
+                                            if(data.ok){
+                                                reload()
+                                            }
+                                        })
+                                    }
                                 }}
                             >
                                 Delete
@@ -159,7 +179,7 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                         <div className="flex-1">{v.name}</div>
                         <div className="flex-1">{getSize(v.size)}</div>
                         <div className="flex-1">{new Date(v.created).toLocaleString()}</div>
-                        <div className="flex-1">
+                        <div className="flex-1 gap-2 flex flex-row items-center justify-center">
                             <button
                                 disabled={isFetching}
                                 className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
@@ -218,6 +238,8 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                 >
                     Select File
                 </button>}
+                <input className="w-full rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" type="password" name="" id="" placeholder="Password"
+                value={password} onChange={e => setPassword(e.target.value)}/>
                 <footer className="w-full flex flex-row items-center justify-between gap-2">
                     <button
                         disabled={isFetching}
@@ -230,12 +252,20 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                         disabled={isFetching}
                         className="flex-1 rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                         onClick={e => {
+                            let isFolder:boolean = windowType == 'folder'
+                            let attr = !isFolder ? {size: file?.size, base64} : {}
                             setIsFetching(true)
                             fetch('/api/controller', {
                                 method: 'POST',
                                 body: JSON.stringify({
-                                    c: windowType == 'folder' ? 'makeFolder' : 'upload',
-                                    d: {name, path, size: 0, base64: '', created: Date.now(), password: '', roles: []}
+                                    c: isFolder ? 'makeFolder' : 'upload',
+                                    d: {
+                                        name, path,
+                                        created: Date.now(),
+                                        password,
+                                        roles: [],
+                                        ...attr
+                                    }
                                 })
                             }).then(res => res.json()).then(data => {
                                 setIsFetching(false)
