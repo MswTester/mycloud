@@ -14,6 +14,10 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
     const [password, setPassword] = useState<string>('')
     const [file, setFile] = useState<File|null>(null)
     const [base64, setBase64] = useState<string>('')
+    const [onEdit, setOnEdit] = useState<boolean>(false)
+    const [e_name, setE_name] = useState<string>('')
+    const [e_password, setE_password] = useState<string>('')
+    const [selected, setSelected] = useState<[number, number]>([0, -1]) // [0] = 0:folder, 1:file, [1] = index
 
     useEffect(() => {
         setOnce(true)
@@ -140,14 +144,19 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                 {folders.filter(v => v.path == path).map((v, i) => (
                     <div key={i} className="w-full flex flex-row items-center justify-between text-center cursor-pointer hover:bg-gray-100 hover:dark:bg-neutral-800 transition-colors p-2"
                     onClick={e => {if((e.target as Element).nodeName == e.currentTarget.nodeName) setPath(v.path + v.name + '/')}}>
-                        <div className="flex-1">{v.name}</div>
+                        <div className="flex-1 whitespace-nowrap text-ellipsis overflow-hidden">{v.name}</div>
                         <div className="flex-1">{getSize(files.filter(f => f.path.startsWith(v.path + v.name + '/')).reduce((a, b) => a + b.size, 0))}</div>
                         <div className="flex-1">{new Date(v.created).toLocaleDateString()}</div>
                         <div className="flex-1 gap-2 flex flex-row items-center justify-center">
                             <button
                                 disabled={isFetching}
                                 className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                                onClick={e => {}}
+                                onClick={e => {
+                                    setOnEdit(true)
+                                    setE_name(v.name)
+                                    setE_password(v.password)
+                                    setSelected([0, i])
+                                }}
                             >
                                 Edit
                             </button>
@@ -175,10 +184,27 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                     </div>
                 ))}
                 {files.filter(v => v.path == path).map((v, i) => (
-                    <div key={i} className="w-full flex flex-row items-center justify-between text-center cursor-pointer hover:bg-gray-100 hover:dark:bg-neutral-800 transition-colors p-2">
-                        <div className="flex-1">{v.name}</div>
+                    <div key={i} className="w-full flex flex-row items-center justify-between text-center cursor-pointer hover:bg-gray-100 hover:dark:bg-neutral-800 transition-colors p-2"
+                    onClick={e => {
+                        if((e.target as Element).nodeName == e.currentTarget.nodeName){
+                            setIsFetching(true)
+                            fetch('/api/controller', {
+                                method: 'POST',
+                                body: JSON.stringify({c: 'download', d: {_id:v._id}})
+                            }).then(res => res.json()).then(data => {
+                                setIsFetching(false)
+                                if(data.ok){
+                                    let a = document.createElement("a")
+                                    a.href = data.data.base64
+                                    a.download = v.name
+                                    a.click()
+                                }
+                            })
+                        }
+                    }}>
+                        <div className="flex-1 whitespace-nowrap text-ellipsis overflow-hidden">{v.name}</div>
                         <div className="flex-1">{getSize(v.size)}</div>
-                        <div className="flex-1">{new Date(v.created).toLocaleString()}</div>
+                        <div className="flex-1">{new Date(v.created).toLocaleDateString()}</div>
                         <div className="flex-1 gap-2 flex flex-row items-center justify-center">
                             <button
                                 disabled={isFetching}
@@ -281,5 +307,35 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                 </footer>
             </div>
         </div>}
+
+        {/* Edit Window */}
+        {onEdit && <div className="absolute w-full h-full left-0 top-0 bg-[#00000055] flex flex-row items-center justify-center"
+        onMouseDown={e => {if(e.currentTarget == e.target) setOnEdit(false)}}>
+            <div className="bg-white dark:bg-neutral-800 rounded-lg p-10 flex flex-col items-center justify-between gap-5">
+                <input className="w-full rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" type="text" name="" id="" placeholder="Name"
+                value={e_name} onChange={e => setE_name(e.target.value)}/>
+                <input className="w-full rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" type="password" name="" id="" placeholder="Password"
+                value={e_password} onChange={e => setE_password(e.target.value)}/>
+                <footer className="w-full flex flex-row items-center justify-between gap-2">
+                    <button
+                        disabled={isFetching}
+                        className="flex-1 rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors placeholder:text-neutral-600 dark:placeholder:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
+                        onClick={e => setOnEdit(false)}
+                    >
+                        Close
+                    </button>
+                    <button
+                        disabled={isFetching}
+                        className="flex-1 rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                        onClick={e => {
+                            setIsFetching(true)
+                        }
+                    }>
+                        Edit
+                    </button>
+                </footer>
+            </div>
+        </div>}
+
     </main>)
 }
