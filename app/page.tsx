@@ -17,6 +17,7 @@ export default function Home() {
   const [once, setOnce] = useState<boolean>(false); // [1]
   const [state, setState] = useState<string>("");
   const [role, setRole] = useState<Role|null>(null);
+  const [onlogin, setOnlogin] = useState<boolean>(false);
 
   useEffect(() => {
     setOnce(true);
@@ -47,7 +48,9 @@ export default function Home() {
   return state == "" ? (
     <main className="flex w-full min-h-screen flex-col items-center justify-between p-24">
       <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
+        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30 select-none cursor-pointer"
+          onClick={() => setOnlogin(!onlogin)}
+        >
           You logged as&nbsp;
           <code className="font-mono font-bold">{capitalize(role?.name || 'guest')}</code>
         </p>
@@ -101,6 +104,10 @@ export default function Home() {
         </div>
         ))}
       </div>
+
+      {onlogin && <div className="absolute w-full h-full left-0 top-0 bg-[#00000055] flex flex-row items-center justify-center">
+
+      </div>}
     </main>
   ) : state == "role" ? (
     <></>
