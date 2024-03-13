@@ -127,7 +127,7 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                     disabled={isFetching}
                     className="rounded-lg border border-transparent p-2 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30 select-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                     onClick={e => setPath('/' + arr.slice(0, i+1).join('/') + '/')}>
-                    {v}/
+                    {v}&nbsp;&nbsp;&nbsp;/
                 </button>
             ))}
         </nav>
@@ -166,9 +166,11 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                                 onClick={e => {
                                     if(e.currentTarget == e.target){
                                         setIsFetching(true)
+                                        let delfilelist = files.filter(f => f.path == v.path + v.name + '/').map(f => f._id)
+                                        let delfolderlist = folders.filter(f => f.path == v.path + v.name + '/').map(f => f._id)
                                         fetch('/api/controller', {
                                             method: 'POST',
-                                            body: JSON.stringify({c: 'deleteFolder', d: {_id:v._id}})
+                                            body: JSON.stringify({c: 'deleteFolder', d: [...delfilelist, ...delfolderlist, v._id]})
                                         }).then(res => res.json()).then(data => {
                                             setIsFetching(false)
                                             if(data.ok){
@@ -232,9 +234,11 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                                 className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                                 onClick={e => {
                                     setIsFetching(true)
+                                    let delfilelist = files.filter(f => f.path == v.path + v.name + '/').map(f => f._id)
+                                    let delfolderlist = folders.filter(f => f.path == v.path + v.name + '/').map(f => f._id)
                                     fetch('/api/controller', {
                                         method: 'POST',
-                                        body: JSON.stringify({c: 'deleteFile', d: {_id:v._id}})
+                                        body: JSON.stringify({c: 'deleteFile', d: [...delfilelist, ...delfolderlist, v._id]})
                                     }).then(res => res.json()).then(data => {
                                         setIsFetching(false)
                                         if(data.ok){

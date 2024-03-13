@@ -4,7 +4,7 @@ import {client} from "../db";
 export async function POST(request: Request) {
     const req = await request.json()
     const command = req.c
-    const data:Data = req.d as Data
+    const data:any = req.d
     const modifier:Data = req.m as Data
     const database = client.db('mycloud')
     const root = database.collection('root')
@@ -42,11 +42,11 @@ export async function POST(request: Request) {
             return new Response(JSON.stringify({ok:true, data:res}))
         }
         case 'deleteFile':{
-            const res = await files.deleteOne({_id: new ObjectId(data._id)})
+            const res = await files.deleteMany({_id: {$in: data.map((id:string) => new ObjectId(id))}})
             return new Response(JSON.stringify({ok:true}))
         }
         case 'deleteFolder':{
-            const res = await folders.deleteOne({_id: new ObjectId(data._id)})
+            const res = await folders.deleteMany({_id: {$in: data.map((id:string) => new ObjectId(id))}})
             return new Response(JSON.stringify({ok:true}))
         }
         case 'makeFolder':{
