@@ -18,10 +18,10 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
     const [e_name, setE_name] = useState<string>('')
     const [e_password, setE_password] = useState<string>('')
     const [selected, setSelected] = useState<[number, string]>([0, '']) // [0] = 0:folder, 1:file, [1] = id
-    const [onPassword, setOnPassword] = useState<boolean>(false)
+    const [onPassword, setOnPassword] = useState<string>('')
     const [passwordInput, setPasswordInput] = useState<string>('')
     const [pwsd, setPwsd] = useState<string>('')
-    const [pwPath, setPwPath] = useState<string>('') // path to open after password check
+    const [pwTarget, setPwTarget] = useState<string>('')
     const [pwError, setPwError] = useState<string>('')
 
     useEffect(() => {
@@ -61,10 +61,10 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
         setBase64('')
     }
 
-    const checkPassword = (pswd:string, path:string) => {
-        setOnPassword(true)
+    const checkPassword = (pswd:string, tar:string, type:string) => {
+        setOnPassword(type)
         setPwsd(pswd)
-        setPwPath(path)
+        setPwTarget(tar)
         setPasswordInput('')
     }
 
@@ -83,6 +83,20 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
             reader.readAsDataURL(tar)
         }
         file.click()
+    }
+
+    const getIdsInPath = (pth:string):string[] => {
+        let ids:string[] = []
+        let foldersInPath = folders.filter(v => v.path == pth)
+        let filesInPath = files.filter(v => v.path == pth)
+        foldersInPath.forEach(v => {
+            ids.push(v._id as string)
+            ids.push(...getIdsInPath(v.path + v._id + '/'))
+        })
+        filesInPath.forEach(v => {
+            ids.push(v._id as string)
+        })
+        return ids
     }
 
     return (<main className="flex flex-col items-center justify-between gap-3" style={{width:'80%', height:'80%', minWidth:'min(100%, 800px)'}}>
@@ -128,6 +142,12 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
 
         {/* Path Controller */}
         <nav className="w-full flex flex-row items-center justify-center">
+            {path.split('/').filter(v => v).length > 0 && <button
+                disabled={isFetching}
+                className="rounded-lg border border-transparent p-2 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30 select-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={e => setPath(path.split('/').slice(0, -2).join('/') + '/')}>
+                &lt;- Back
+            </button>}
             <button
                 disabled={isFetching}
                 className="rounded-lg border border-transparent p-2 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30 select-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
@@ -157,8 +177,8 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                     <div key={i} className="w-full flex flex-row items-center justify-between text-center cursor-pointer hover:bg-gray-100 hover:dark:bg-neutral-800 transition-colors p-2"
                     onClick={e => {
                         if((e.target as Element).nodeName == e.currentTarget.nodeName){
-                            if(v.password){
-                                checkPassword(v.password, v.path + v._id + '/')
+                            if(v.password && props.role?.name != "admin"){
+                                checkPassword(v.password, v.path + v._id + '/', 'path')
                             } else {
                                 setPath(v.path + v._id + '/')
                             }
@@ -172,10 +192,14 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                                 disabled={isFetching}
                                 className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                                 onClick={e => {
-                                    setOnEdit(true)
-                                    setE_name(v.name)
-                                    setE_password(v.password)
-                                    setSelected([0, v._id as string])
+                                    if(v.password && props.role?.name != "admin"){
+                                        checkPassword(v.password, `${v.name}%${v._id}%0`, 'edit')
+                                    } else {
+                                        setOnEdit(true)
+                                        setE_name(v.name)
+                                        setE_password(v.password)
+                                        setSelected([0, v._id as string])
+                                    }
                                 }}
                             >
                                 Edit
@@ -185,18 +209,21 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                                 className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                                 onClick={e => {
                                     if(e.currentTarget == e.target){
-                                        setIsFetching(true)
-                                        let delfilelist = files.filter(f => f.path == v.path + v._id + '/').map(f => f._id)
-                                        let delfolderlist = folders.filter(f => f.path == v.path + v._id + '/').map(f => f._id)
-                                        fetch('/api/controller', {
-                                            method: 'POST',
-                                            body: JSON.stringify({c: 'deleteFolder', d: [...delfilelist, ...delfolderlist, v._id]})
-                                        }).then(res => res.json()).then(data => {
-                                            setIsFetching(false)
-                                            if(data.ok){
-                                                reload()
-                                            }
-                                        })
+                                        if(v.password && props.role?.name != "admin"){
+                                            checkPassword(v.password, `${v._id || ''}%${v.path + v._id + '/'}`, 'deleteFolder')
+                                        } else {
+                                            setIsFetching(true)
+                                            let ids = getIdsInPath(v.path + v._id + '/')
+                                            fetch('/api/controller', {
+                                                method: 'POST',
+                                                body: JSON.stringify({c: 'deleteFolder', d: [...ids, v._id]})
+                                            }).then(res => res.json()).then(data => {
+                                                setIsFetching(false)
+                                                if(data.ok){
+                                                    reload()
+                                                }
+                                            })
+                                        }
                                     }
                                 }}
                             >
@@ -209,19 +236,23 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                     <div key={i} className="w-full flex flex-row items-center justify-between text-center cursor-pointer hover:bg-gray-100 hover:dark:bg-neutral-800 transition-colors p-2"
                     onClick={e => {
                         if((e.target as Element).nodeName == e.currentTarget.nodeName){
-                            setIsFetching(true)
-                            fetch('/api/controller', {
-                                method: 'POST',
-                                body: JSON.stringify({c: 'download', d: {_id:v._id}})
-                            }).then(res => res.json()).then(data => {
-                                setIsFetching(false)
-                                if(data.ok){
-                                    let a = document.createElement("a")
-                                    a.href = data.data.base64
-                                    a.download = v.name
-                                    a.click()
-                                }
-                            })
+                            if(v.password && props.role?.name != "admin"){
+                                checkPassword(v.password, `${v.name}%${v._id}`, 'download')
+                            } else {
+                                setIsFetching(true)
+                                fetch('/api/controller', {
+                                    method: 'POST',
+                                    body: JSON.stringify({c: 'download', d: {_id:v._id}})
+                                }).then(res => res.json()).then(data => {
+                                    setIsFetching(false)
+                                    if(data.ok){
+                                        let a = document.createElement("a")
+                                        a.href = data.data.base64
+                                        a.download = v.name
+                                        a.click()
+                                    }
+                                })
+                            }
                         }
                     }}>
                         <div className="flex-1 whitespace-nowrap text-ellipsis overflow-hidden">{(v.password && '🔒 ') + v.name}</div>
@@ -232,10 +263,14 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                                 disabled={isFetching}
                                 className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                                 onClick={e => {
-                                    setOnEdit(true)
-                                    setE_name(v.name)
-                                    setE_password(v.password)
-                                    setSelected([1, v._id as string])
+                                    if(v.password && props.role?.name != "admin"){
+                                        checkPassword(v.password, `${v.name}%${v._id}%1`, 'edit')
+                                    } else {
+                                        setOnEdit(true)
+                                        setE_name(v.name)
+                                        setE_password(v.password)
+                                        setSelected([1, v._id as string])
+                                    }
                                 }}
                             >
                                 Edit
@@ -244,16 +279,20 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                                 disabled={isFetching}
                                 className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                                 onClick={e => {
-                                    setIsFetching(true)
-                                    fetch('/api/controller', {
-                                        method: 'POST',
-                                        body: JSON.stringify({c: 'deleteFile', d: {_id:v._id}})
-                                    }).then(res => res.json()).then(data => {
-                                        setIsFetching(false)
-                                        if(data.ok){
-                                            reload()
-                                        }
-                                    })
+                                    if(v.password && props.role?.name != "admin"){
+                                        checkPassword(v.password, v._id || '', 'deleteFile')
+                                    } else {
+                                        setIsFetching(true)
+                                        fetch('/api/controller', {
+                                            method: 'POST',
+                                            body: JSON.stringify({c: 'deleteFile', d: {_id:v._id}})
+                                        }).then(res => res.json()).then(data => {
+                                            setIsFetching(false)
+                                            if(data.ok){
+                                                reload()
+                                            }
+                                        })
+                                    }
                                 }}
                             >
                                 Delete
@@ -366,7 +405,7 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
 
         {/* Password Window */}
         {onPassword && <div className="absolute w-full h-full left-0 top-0 bg-[#00000055] flex flex-row items-center justify-center"
-        onMouseDown={e => {if(e.currentTarget == e.target) setOnPassword(false)}}>
+        onMouseDown={e => {if(e.currentTarget == e.target) setOnPassword('')}}>
             <div className="bg-white dark:bg-neutral-800 rounded-lg p-10 flex flex-col items-center justify-between gap-5">
                 <input className="w-full rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" type="password" name="" id="" placeholder="Password"
                 value={passwordInput} onChange={e => {
@@ -379,11 +418,11 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                         disabled={isFetching}
                         className="flex-1 rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors placeholder:text-neutral-600 dark:placeholder:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
                         onClick={e => {
-                            setOnPassword(false)
+                            setOnPassword('')
                             setPasswordInput('')
                             setPwsd('')
                             setPwError('')
-                            setPwPath('')
+                            setPwTarget('')
                         }}
                     >
                         Close
@@ -393,13 +432,65 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                         className="flex-1 rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                         onClick={e => {
                             if(passwordInput == pwsd){
-                                setOnPassword(false)
+                                setOnPassword('')
                                 setPasswordInput('')
-                                setPwsd('')
                                 setPwError('')
-                                setPath(pwPath)
-                                setPwPath('')
-                            } else {
+                                switch(onPassword){
+                                    case 'path':
+                                        setPath(pwTarget)
+                                        break;
+                                    case 'edit':
+                                        setOnEdit(true)
+                                        setE_name(pwTarget.split('%')[0])
+                                        setE_password(pwsd)
+                                        setSelected([+pwTarget.split('%')[2], pwTarget.split('%')[1]])
+                                        break;
+                                    case 'deleteFolder':
+                                        setIsFetching(true)
+                                        let pth = pwTarget.split('%')[1]
+                                        let id = pwTarget.split('%')[0]
+                                        let ids = getIdsInPath(pth)
+                                        fetch('/api/controller', {
+                                            method: 'POST',
+                                            body: JSON.stringify({c: 'deleteFolder', d: [...ids, id]})
+                                        }).then(res => res.json()).then(data => {
+                                            setIsFetching(false)
+                                            if(data.ok){
+                                                reload()
+                                            }
+                                        })
+                                        break;
+                                    case 'deleteFile':
+                                        setIsFetching(true)
+                                        fetch('/api/controller', {
+                                            method: 'POST',
+                                            body: JSON.stringify({c: 'deleteFile', d: {_id: pwTarget}})
+                                        }).then(res => res.json()).then(data => {
+                                            setIsFetching(false)
+                                            if(data.ok){
+                                                reload()
+                                            }
+                                        })
+                                        break;
+                                    case 'download':
+                                        setIsFetching(true)
+                                        fetch('/api/controller', {
+                                            method: 'POST',
+                                            body: JSON.stringify({c: 'download', d: {_id: pwTarget.split('%')[1]}})
+                                        }).then(res => res.json()).then(data => {
+                                            setIsFetching(false)
+                                            if(data.ok){
+                                                let a = document.createElement("a")
+                                                a.href = data.data.base64
+                                                a.download = pwTarget.split('%')[0]
+                                                a.click()
+                                            }
+                                        })
+                                        break;
+                                }
+                                    setPwTarget('')
+                                    setPwsd('')
+                                } else {
                                 setPwError('Invalid Password')
                             }
                         }

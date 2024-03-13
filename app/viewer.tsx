@@ -187,7 +187,7 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                     className="w-full flex flex-row items-center justify-between text-center cursor-pointer hover:bg-gray-100 hover:dark:bg-neutral-800 transition-colors p-2"
                     onClick={e => {
                         if((e.target as Element).nodeName == e.currentTarget.nodeName){
-                            if(d.password){
+                            if(d.password && props.role?.name != "admin"){
                                 setOnPassword(true)
                                 setPassWork("update")
                                 setR(i)
@@ -223,7 +223,7 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                         <button className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-2 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={isFetching}
                         onClick={e => {
-                            if(d.password){
+                            if(d.password && props.role?.name != "admin"){
                                 setOnPassword(true)
                                 setPassWork("delete")
                                 setR(i)
@@ -319,7 +319,7 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                 <input className="w-full rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" type="password" name="" id="" placeholder="Password"
                 onChange={e => setUpdPass(e.target.value)} value={updPass}/>
                 {
-                    datatype == "img" ? <canvas
+                    datatype == "img" ? <><canvas
                     width={500} height={300}
                     className="w-full rounded-md border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 transition-colors"
                     ref={canvas => {
@@ -346,7 +346,17 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                         }
                         file.click()
                     }}
-                    ></canvas>:
+                    ></canvas>
+                    <button className="flex-1 w-full rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors placeholder:text-neutral-600 dark:placeholder:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={isFetching}
+                    onClick={e => {
+                        let canvas = document.querySelector("canvas") as HTMLCanvasElement
+                        let a = document.createElement("a")
+                        a.href = canvas.toDataURL()
+                        a.download = `${title}.png`
+                        a.click()
+                    }}
+                    >Download</button></>:
                     datatype == "json" ? <textarea className="w-full rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors"
                     name="" id="" value={content}
                     onChange={e => setContent(e.target.value)}/>:
@@ -418,7 +428,7 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                         className="flex-1 rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                         onClick={e => {
                             let tar = data[r]
-                            if(password == tar.password || (process.env.masterPassword && password == process.env.masterPassword)){
+                            if(password == tar.password){
                                 setIsFetching(true)
                                 fetch("/api/controller", {
                                     method: "POST",

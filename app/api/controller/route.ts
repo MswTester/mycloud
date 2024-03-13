@@ -79,6 +79,10 @@ export async function POST(request: Request) {
             const res = await roles.find({}, {projection: {password:0}}).toArray()
             return new Response(JSON.stringify({ok:true, data:res}))
         }
+        case 'findRole':{
+            const res = await roles.findOne({_id: new ObjectId(data._id)})
+            return new Response(JSON.stringify({ok:true, data:res}))
+        }
         default: {
             return new Response(JSON.stringify({ok:false, error: 'Invalid command'}))
         }
