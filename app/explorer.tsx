@@ -17,9 +17,12 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
     const [onEdit, setOnEdit] = useState<boolean>(false)
     const [e_name, setE_name] = useState<string>('')
     const [e_password, setE_password] = useState<string>('')
-    const [selected, setSelected] = useState<[number, number]>([0, -1]) // [0] = 0:folder, 1:file, [1] = index
+    const [selected, setSelected] = useState<[number, string]>([0, '']) // [0] = 0:folder, 1:file, [1] = id
     const [onPassword, setOnPassword] = useState<boolean>(false)
     const [passwordInput, setPasswordInput] = useState<string>('')
+    const [pwsd, setPwsd] = useState<string>('')
+    const [pwPath, setPwPath] = useState<string>('') // path to open after password check
+    const [pwError, setPwError] = useState<string>('')
 
     useEffect(() => {
         setOnce(true)
@@ -56,6 +59,13 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
         setPassword('')
         setFile(null)
         setBase64('')
+    }
+
+    const checkPassword = (pswd:string, path:string) => {
+        setOnPassword(true)
+        setPwsd(pswd)
+        setPwPath(path)
+        setPasswordInput('')
     }
 
     const openFile = () => {
@@ -129,7 +139,7 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                     disabled={isFetching}
                     className="rounded-lg border border-transparent p-2 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30 select-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                     onClick={e => setPath('/' + arr.slice(0, i+1).join('/') + '/')}>
-                    {v}&nbsp;&nbsp;&nbsp;/
+                    {folders.find(v2 => v2._id === v)?.name}&nbsp;&nbsp;&nbsp;/
                 </button>
             ))}
         </nav>
@@ -148,13 +158,14 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                     onClick={e => {
                         if((e.target as Element).nodeName == e.currentTarget.nodeName){
                             if(v.password){
-
+                                checkPassword(v.password, v.path + v._id + '/')
+                            } else {
+                                setPath(v.path + v._id + '/')
                             }
-                            setPath(v.path + v.name + '/')
                         }
                     }}>
                         <div className="flex-1 whitespace-nowrap text-ellipsis overflow-hidden">{(v.password && '🔒 ') + v.name}</div>
-                        <div className="flex-1">{getSize(files.filter(f => f.path.startsWith(v.path + v.name + '/')).reduce((a, b) => a + b.size, 0))}</div>
+                        <div className="flex-1">{getSize(files.filter(f => f.path.startsWith(v.path + v._id + '/')).reduce((a, b) => a + b.size, 0))}</div>
                         <div className="flex-1">{new Date(v.created).toLocaleDateString()}</div>
                         <div className="flex-1 gap-2 flex flex-row items-center justify-center">
                             <button
@@ -164,7 +175,7 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                                     setOnEdit(true)
                                     setE_name(v.name)
                                     setE_password(v.password)
-                                    setSelected([0, i])
+                                    setSelected([0, v._id as string])
                                 }}
                             >
                                 Edit
@@ -175,8 +186,8 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                                 onClick={e => {
                                     if(e.currentTarget == e.target){
                                         setIsFetching(true)
-                                        let delfilelist = files.filter(f => f.path == v.path + v.name + '/').map(f => f._id)
-                                        let delfolderlist = folders.filter(f => f.path == v.path + v.name + '/').map(f => f._id)
+                                        let delfilelist = files.filter(f => f.path == v.path + v._id + '/').map(f => f._id)
+                                        let delfolderlist = folders.filter(f => f.path == v.path + v._id + '/').map(f => f._id)
                                         fetch('/api/controller', {
                                             method: 'POST',
                                             body: JSON.stringify({c: 'deleteFolder', d: [...delfilelist, ...delfolderlist, v._id]})
@@ -224,7 +235,7 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                                     setOnEdit(true)
                                     setE_name(v.name)
                                     setE_password(v.password)
-                                    setSelected([1, i])
+                                    setSelected([1, v._id as string])
                                 }}
                             >
                                 Edit
@@ -335,7 +346,7 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                                 method: 'POST',
                                 body: JSON.stringify({
                                     c: selected[0] == 0 ? 'updateFolder' : 'updateFile',
-                                    d: {_id: selected[0] == 0 ? folders[selected[1]]._id : files[selected[1]]._id},
+                                    d: {_id: selected[0] == 0 ? folders.find(v => v._id == selected[1])?._id : files.find(v => v._id == selected[1])?._id},
                                     m: {name: e_name, password: e_password}
                                 })
                             }).then(res => res.json()).then(data => {
@@ -348,6 +359,52 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                         }
                     }>
                         Edit
+                    </button>
+                </footer>
+            </div>
+        </div>}
+
+        {/* Password Window */}
+        {onPassword && <div className="absolute w-full h-full left-0 top-0 bg-[#00000055] flex flex-row items-center justify-center"
+        onMouseDown={e => {if(e.currentTarget == e.target) setOnPassword(false)}}>
+            <div className="bg-white dark:bg-neutral-800 rounded-lg p-10 flex flex-col items-center justify-between gap-5">
+                <input className="w-full rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" type="password" name="" id="" placeholder="Password"
+                value={passwordInput} onChange={e => {
+                    setPasswordInput(e.target.value)
+                    setPwError('')
+                }}/>
+                <p className="text-red-500">{pwError}</p>
+                <footer className="w-full flex flex-row items-center justify-between gap-2">
+                    <button
+                        disabled={isFetching}
+                        className="flex-1 rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors placeholder:text-neutral-600 dark:placeholder:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
+                        onClick={e => {
+                            setOnPassword(false)
+                            setPasswordInput('')
+                            setPwsd('')
+                            setPwError('')
+                            setPwPath('')
+                        }}
+                    >
+                        Close
+                    </button>
+                    <button
+                        disabled={isFetching}
+                        className="flex-1 rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                        onClick={e => {
+                            if(passwordInput == pwsd){
+                                setOnPassword(false)
+                                setPasswordInput('')
+                                setPwsd('')
+                                setPwError('')
+                                setPath(pwPath)
+                                setPwPath('')
+                            } else {
+                                setPwError('Invalid Password')
+                            }
+                        }
+                    }>
+                        Open
                     </button>
                 </footer>
             </div>

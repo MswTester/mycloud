@@ -448,7 +448,7 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                                     }
                                 }).catch(err => console.error(err))
                             } else {
-                                setPassErrMsg("Password is incorrect")
+                                setPassErrMsg("Invalid Password")
                             }
                         }}
                     >
