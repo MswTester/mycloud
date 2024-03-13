@@ -18,6 +18,8 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
     const [e_name, setE_name] = useState<string>('')
     const [e_password, setE_password] = useState<string>('')
     const [selected, setSelected] = useState<[number, number]>([0, -1]) // [0] = 0:folder, 1:file, [1] = index
+    const [onPassword, setOnPassword] = useState<boolean>(false)
+    const [passwordInput, setPasswordInput] = useState<string>('')
 
     useEffect(() => {
         setOnce(true)
@@ -143,8 +145,15 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
             <div className="w-full h-full flex-1 overflow-y-auto">
                 {folders.filter(v => v.path == path).map((v, i) => (
                     <div key={i} className="w-full flex flex-row items-center justify-between text-center cursor-pointer hover:bg-gray-100 hover:dark:bg-neutral-800 transition-colors p-2"
-                    onClick={e => {if((e.target as Element).nodeName == e.currentTarget.nodeName) setPath(v.path + v.name + '/')}}>
-                        <div className="flex-1 whitespace-nowrap text-ellipsis overflow-hidden">{v.name}</div>
+                    onClick={e => {
+                        if((e.target as Element).nodeName == e.currentTarget.nodeName){
+                            if(v.password){
+
+                            }
+                            setPath(v.path + v.name + '/')
+                        }
+                    }}>
+                        <div className="flex-1 whitespace-nowrap text-ellipsis overflow-hidden">{(v.password && '🔒 ') + v.name}</div>
                         <div className="flex-1">{getSize(files.filter(f => f.path.startsWith(v.path + v.name + '/')).reduce((a, b) => a + b.size, 0))}</div>
                         <div className="flex-1">{new Date(v.created).toLocaleDateString()}</div>
                         <div className="flex-1 gap-2 flex flex-row items-center justify-center">
@@ -204,7 +213,7 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                             })
                         }
                     }}>
-                        <div className="flex-1 whitespace-nowrap text-ellipsis overflow-hidden">{v.name}</div>
+                        <div className="flex-1 whitespace-nowrap text-ellipsis overflow-hidden">{(v.password && '🔒 ') + v.name}</div>
                         <div className="flex-1">{getSize(v.size)}</div>
                         <div className="flex-1">{new Date(v.created).toLocaleDateString()}</div>
                         <div className="flex-1 gap-2 flex flex-row items-center justify-center">
@@ -212,33 +221,22 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                                 disabled={isFetching}
                                 className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                                 onClick={e => {
-                                    setIsFetching(true)
-                                    fetch('/api/controller', {
-                                        method: 'POST',
-                                        body: JSON.stringify({c: 'download', d: {_id:v._id}})
-                                    }).then(res => res.json()).then(data => {
-                                        setIsFetching(false)
-                                        if(data.ok){
-                                            let a = document.createElement("a")
-                                            a.href = data.data.base64
-                                            a.download = v.name
-                                            a.click()
-                                        }
-                                    })
+                                    setOnEdit(true)
+                                    setE_name(v.name)
+                                    setE_password(v.password)
+                                    setSelected([1, i])
                                 }}
                             >
-                                Download
+                                Edit
                             </button>
                             <button
                                 disabled={isFetching}
                                 className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                                 onClick={e => {
                                     setIsFetching(true)
-                                    let delfilelist = files.filter(f => f.path == v.path + v.name + '/').map(f => f._id)
-                                    let delfolderlist = folders.filter(f => f.path == v.path + v.name + '/').map(f => f._id)
                                     fetch('/api/controller', {
                                         method: 'POST',
-                                        body: JSON.stringify({c: 'deleteFile', d: [...delfilelist, ...delfolderlist, v._id]})
+                                        body: JSON.stringify({c: 'deleteFile', d: {_id:v._id}})
                                     }).then(res => res.json()).then(data => {
                                         setIsFetching(false)
                                         if(data.ok){
@@ -333,6 +331,20 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                         className="flex-1 rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                         onClick={e => {
                             setIsFetching(true)
+                            fetch('/api/controller', {
+                                method: 'POST',
+                                body: JSON.stringify({
+                                    c: selected[0] == 0 ? 'updateFolder' : 'updateFile',
+                                    d: {_id: selected[0] == 0 ? folders[selected[1]]._id : files[selected[1]]._id},
+                                    m: {name: e_name, password: e_password}
+                                })
+                            }).then(res => res.json()).then(data => {
+                                setIsFetching(false)
+                                if(data.ok){
+                                    setOnEdit(false)
+                                    reload()
+                                }
+                            })
                         }
                     }>
                         Edit

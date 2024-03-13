@@ -42,12 +42,21 @@ export async function POST(request: Request) {
             return new Response(JSON.stringify({ok:true, data:res}))
         }
         case 'deleteFile':{
-            const res = await files.deleteMany({_id: {$in: data.map((id:string) => new ObjectId(id))}})
+            const res = await files.deleteMany({_id: new ObjectId(data._id)})
             return new Response(JSON.stringify({ok:true}))
+        }
+        case 'updateFile':{
+            const res = await files.updateOne({_id: new ObjectId(data._id)}, {$set: modifier})
+            return new Response(JSON.stringify({ok:true, data:res}))
         }
         case 'deleteFolder':{
             const res = await folders.deleteMany({_id: {$in: data.map((id:string) => new ObjectId(id))}})
+            const res2 = await files.deleteMany({folder: {$in: data.map((id:string) => new ObjectId(id))}})
             return new Response(JSON.stringify({ok:true}))
+        }
+        case 'updateFolder':{
+            const res = await folders.updateOne({_id: new ObjectId(data._id)}, {$set: modifier})
+            return new Response(JSON.stringify({ok:true, data:res}))
         }
         case 'makeFolder':{
             const res = await folders.insertOne({ ...data, _id: ObjectId.createFromTime(Date.now())})
