@@ -19,6 +19,11 @@ export default function Home() {
   const [role, setRole] = useState<Role|null>(null);
   const [onlogin, setOnlogin] = useState<boolean>(false);
 
+  const [isFetching, setIsFetching] = useState<boolean>(false);
+  const [name, setName] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [errorMsg, setErrorMsg] = useState<string>("");
+
   useEffect(() => {
     setOnce(true);
   }, []);
@@ -27,6 +32,7 @@ export default function Home() {
     if (once) {
       let role = localStorage.getItem("role");
       if (role) {
+        setIsFetching(true);
         fetch("/api/controller", {
           method: "POST",
           headers: {
@@ -36,6 +42,7 @@ export default function Home() {
         })
           .then((res) => res.json())
           .then((res) => {
+            setIsFetching(false);
             if (res.ok) {
               setRole(res.data);
             }
@@ -44,6 +51,20 @@ export default function Home() {
       }
     }
   }, [once]);
+
+  useEffect(() => {
+    if (role) {
+      localStorage.setItem("role", role._id || "");
+    }
+  }, [role]);
+
+  useEffect(() => {
+    if (!onlogin) {
+      setName("");
+      setPassword("");
+      setErrorMsg("");
+    }
+  }, [onlogin]);
 
   return state == "" ? (
     <main className="flex w-full min-h-screen flex-col items-center justify-between p-24">
@@ -111,9 +132,37 @@ export default function Home() {
       }}>
         <div className="flex flex-col gap-4 p-8 bg-white rounded-lg">
           <p className="text-2xl font-semibold">Login</p>
-          <input type="text" placeholder="Username" className="p-2 border border-gray-300 rounded-lg"/>
-          <input type="password" placeholder="Password" className="p-2 border border-gray-300 rounded-lg"/>
-          <button className="p-2 bg-gradient-to-r from-sky-200 to-blue-200 rounded-lg">Login</button>
+          <input type="text" placeholder="Username" className="p-2 border border-gray-300 rounded-lg" value={name} onChange={e => {setName(e.target.value);setErrorMsg('')}}/>
+          <input type="password" placeholder="Password" className="p-2 border border-gray-300 rounded-lg" value={password} onChange={e => {setPassword(e.target.value);setErrorMsg('')}}/>
+          <p className="text-red-500">{errorMsg}</p>
+          {role && <button className="p-2 bg-gradient-to-r from-sky-200 to-blue-200 rounded-lg"
+          onClick={() => {
+            localStorage.removeItem("role")
+            setRole(null)
+            setOnlogin(false)
+          }}>Logout</button>}
+          <button className="p-2 bg-gradient-to-r from-sky-200 to-blue-200 rounded-lg"
+          onClick={() => {
+            setIsFetching(true)
+            fetch("/api/controller", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ c: "findRole", d: { name, password } }),
+            })
+              .then((res) => res.json())
+              .then((res) => {
+                if (res.data) {
+                  setRole(res.data);
+                  setOnlogin(false);
+                } else {
+                  setErrorMsg("Invalid username or password");
+                }
+              })
+              .catch((err) => console.error(err))
+              .finally(() => setIsFetching(false));
+          }}>Login</button>
         </div>
       </div>}
     </main>

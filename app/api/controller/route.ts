@@ -80,7 +80,7 @@ export async function POST(request: Request) {
             return new Response(JSON.stringify({ok:true, data:res}))
         }
         case 'findRole':{
-            const res = await roles.findOne({_id: new ObjectId(data._id)})
+            const res = await roles.findOne({...data, _id: new ObjectId(data._id)})
             return new Response(JSON.stringify({ok:true, data:res}))
         }
         default: {
