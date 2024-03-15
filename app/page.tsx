@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import Viewer from "./viewer";
 import Explorer from "./explorer";
+import Role from "./role";
 
 const types:{[key:string]:string} = {
   "Role":"Create & Manage Roles",
@@ -167,7 +168,7 @@ export default function Home() {
       </div>}
     </main>
   ) : state == "role" ? (
-    <></>
+    <Role state={state} setState={setState} role={role} setRole={setRole} />
   ) : state == "file" ? (
     <Explorer state={state} setState={setState} role={role} setRole={setRole}/>
   ) : state == "table" ? (

@@ -68,6 +68,8 @@ export async function POST(request: Request) {
             return new Response(JSON.stringify({ok:true, data:{files:fileRes, folders:folderRes}}))
         }
         case 'makeRole':{
+            const find = await roles.findOne({name:data.name})
+            if(find) return new Response(JSON.stringify({ok:false, error: 'Role already exists'}))
             const res = await roles.insertOne({ ...data, _id: ObjectId.createFromTime(Date.now())})
             return new Response(JSON.stringify({ok:true, id:res.insertedId}))
         }
@@ -76,11 +78,12 @@ export async function POST(request: Request) {
             return new Response(JSON.stringify({ok:true}))
         }
         case 'listRoles':{
-            const res = await roles.find({}, {projection: {password:0}}).toArray()
+            const res = await roles.find({}).toArray()
             return new Response(JSON.stringify({ok:true, data:res}))
         }
         case 'findRole':{
-            const res = await roles.findOne({...data, _id: new ObjectId(data._id)})
+            const obj = data._id ? {_id: new ObjectId(data._id)} : {...data}
+            const res = await roles.findOne(obj)
             return new Response(JSON.stringify({ok:true, data:res}))
         }
         default: {
