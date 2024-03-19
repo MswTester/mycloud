@@ -17,10 +17,12 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
     const [title, setTitle] = useState("")
     const [datatype, setDatatype] = useState("")
     const [password, setPassword] = useState("")
+    const [permissions, setPermissions] = useState<string[]>([])
     const [onPassword, setOnPassword] = useState(false)
     const [r, setR] = useState<number>(-1)
     const [passErrMsg, setPassErrMsg] = useState("")
     const [updPass, setUpdPass] = useState("")
+    const [updPerm, setUpdPerm] = useState<string[]>([])
     const [passWork, setPassWork] = useState<"update"|"delete">("update")
 
     const [f_format, setF_format] = useState<boolean>(false)
@@ -48,7 +50,8 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
         if(!onWindow){
             setName("")
             setFormat("text")
-            setPassword("")              
+            setPassword("")
+            setPermissions([])
         }
     }, [onWindow])
 
@@ -58,6 +61,7 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
             setContent("")
             setDatatype("")
             setUpdPass("")
+            setUpdPerm([])
         } else {
             resizeTextarea()
         }
@@ -187,7 +191,7 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                     className="w-full flex flex-row items-center justify-between text-center cursor-pointer hover:bg-gray-100 hover:dark:bg-neutral-800 transition-colors p-2"
                     onClick={e => {
                         if((e.target as Element).nodeName == e.currentTarget.nodeName){
-                            if(d.password && props.role?.name != "admin"){
+                            if(d.password && props.role?.name != "admin" && d.roles.indexOf(props.role?.name!) == -1){
                                 setOnPassword(true)
                                 setPassWork("update")
                                 setR(i)
@@ -208,6 +212,7 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                                     setTitle(data.data.name)
                                     setDatatype(data.data.format)
                                     setUpdPass(data.data.password)
+                                    setUpdPerm(data.data.roles)
                                     setOnContent(true)
                                     setSelectedData(i)
                                 }).catch(err => console.error(err))
@@ -223,7 +228,7 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                         <button className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-2 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={isFetching}
                         onClick={e => {
-                            if(d.password && props.role?.name != "admin"){
+                            if(d.password && props.role?.name != "admin" && d.roles.indexOf(props.role?.name!) == -1){
                                 setOnPassword(true)
                                 setPassWork("delete")
                                 setR(i)
@@ -266,6 +271,8 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                 </select>
                 <input className="w-full rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" type="password" name="" id="" placeholder="Password"
                 onChange={e => setPassword(e.target.value)} value={password}/>
+                <input className="w-full rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" type="text" name="" id="" placeholder="Permissions"
+                onChange={e => setPermissions(e.target.value.split(","))} value={permissions.join(',')}/>
                 <footer className="w-full flex flex-row items-center justify-between gap-2">
                     <button
                         disabled={isFetching}
@@ -286,7 +293,7 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                                 },
                                 body: JSON.stringify({
                                     c: 'create',
-                                    d: {name, format, created: new Date(), modified: new Date(), content:"", password, role: []}
+                                    d: {name, format, created: new Date(), modified: new Date(), content:"", password, roles: permissions}
                                 })
                             }).then(res => res.json()).then(data => {
                                 setIsFetching(false)
@@ -318,6 +325,8 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                 </select>
                 <input className="w-full rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" type="password" name="" id="" placeholder="Password"
                 onChange={e => setUpdPass(e.target.value)} value={updPass}/>
+                <input className="w-full rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" type="text" name="" id="" placeholder="Permissions"
+                onChange={e => setUpdPerm(e.target.value.split(","))} value={updPerm.join(',')}/>
                 {
                     datatype == "img" ? <><canvas
                     width={500} height={300}
@@ -389,7 +398,7 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                                 body: JSON.stringify({
                                     c: 'update',
                                     d: {_id:seld._id},
-                                    m: {content, modified: new Date(), name: title || seld.name, format: datatype, password: updPass}
+                                    m: {content, modified: new Date(), name: title || seld.name, format: datatype, password: updPass, roles: updPerm}
                                 })
                             }).then(res => res.json()).then(data => {
                                 setIsFetching(false)
@@ -452,6 +461,7 @@ export default function Viewer(props: {state: string, setState: Dispatch<SetStat
                                         setTitle(data.data.name)
                                         setDatatype(data.data.format)
                                         setUpdPass(data.data.password)
+                                        setUpdPerm(data.data.roles)
                                         setOnContent(true)
                                     } else {
                                         reload()

@@ -12,11 +12,13 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
     const [search, setSearch] = useState<string>('')
     const [name, setName] = useState<string>('')
     const [password, setPassword] = useState<string>('')
+    const [permissions, setPermissions] = useState<string[]>([])
     const [file, setFile] = useState<File|null>(null)
     const [base64, setBase64] = useState<string>('')
     const [onEdit, setOnEdit] = useState<boolean>(false)
     const [e_name, setE_name] = useState<string>('')
     const [e_password, setE_password] = useState<string>('')
+    const [e_permissions, setE_permissions] = useState<string[]>([])
     const [selected, setSelected] = useState<[number, string]>([0, '']) // [0] = 0:folder, 1:file, [1] = id
     const [onPassword, setOnPassword] = useState<string>('')
     const [passwordInput, setPasswordInput] = useState<string>('')
@@ -57,6 +59,7 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
         setWindowType('')
         setName('')
         setPassword('')
+        setPermissions([])
         setFile(null)
         setBase64('')
     }
@@ -177,7 +180,7 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                     <div key={i} className="w-full flex flex-row items-center justify-between text-center cursor-pointer hover:bg-gray-100 hover:dark:bg-neutral-800 transition-colors p-2"
                     onClick={e => {
                         if((e.target as Element).nodeName == e.currentTarget.nodeName){
-                            if(v.password && props.role?.name != "admin"){
+                            if(v.password && props.role?.name != "admin" && !v.roles.includes(props.role?.name || '')){
                                 checkPassword(v.password, v.path + v._id + '/', 'path')
                             } else {
                                 setPath(v.path + v._id + '/')
@@ -192,12 +195,13 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                                 disabled={isFetching}
                                 className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                                 onClick={e => {
-                                    if(v.password && props.role?.name != "admin"){
-                                        checkPassword(v.password, `${v.name}%${v._id}%0`, 'edit')
+                                    if(v.password && props.role?.name != "admin" && !v.roles.includes(props.role?.name || '')){
+                                        checkPassword(v.password, `${v.name}%${v._id}%${v.roles}%0`, 'edit')
                                     } else {
                                         setOnEdit(true)
                                         setE_name(v.name)
                                         setE_password(v.password)
+                                        setE_permissions(v.roles)
                                         setSelected([0, v._id as string])
                                     }
                                 }}
@@ -209,7 +213,7 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                                 className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                                 onClick={e => {
                                     if(e.currentTarget == e.target){
-                                        if(v.password && props.role?.name != "admin"){
+                                        if(v.password && props.role?.name != "admin" && !v.roles.includes(props.role?.name || '')){
                                             checkPassword(v.password, `${v._id || ''}%${v.path + v._id + '/'}`, 'deleteFolder')
                                         } else {
                                             setIsFetching(true)
@@ -236,7 +240,7 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                     <div key={i} className="w-full flex flex-row items-center justify-between text-center cursor-pointer hover:bg-gray-100 hover:dark:bg-neutral-800 transition-colors p-2"
                     onClick={e => {
                         if((e.target as Element).nodeName == e.currentTarget.nodeName){
-                            if(v.password && props.role?.name != "admin"){
+                            if(v.password && props.role?.name != "admin" && !v.roles.includes(props.role?.name || '')){
                                 checkPassword(v.password, `${v.name}%${v._id}`, 'download')
                             } else {
                                 setIsFetching(true)
@@ -263,12 +267,13 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                                 disabled={isFetching}
                                 className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                                 onClick={e => {
-                                    if(v.password && props.role?.name != "admin"){
-                                        checkPassword(v.password, `${v.name}%${v._id}%1`, 'edit')
+                                    if(v.password && props.role?.name != "admin" && !v.roles.includes(props.role?.name || '')){
+                                        checkPassword(v.password, `${v.name}%${v._id}%${v.roles}%1`, 'edit')
                                     } else {
                                         setOnEdit(true)
                                         setE_name(v.name)
                                         setE_password(v.password)
+                                        setE_permissions(v.roles)
                                         setSelected([1, v._id as string])
                                     }
                                 }}
@@ -279,7 +284,7 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                                 disabled={isFetching}
                                 className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                                 onClick={e => {
-                                    if(v.password && props.role?.name != "admin"){
+                                    if(v.password && props.role?.name != "admin" && !v.roles.includes(props.role?.name || '')){
                                         checkPassword(v.password, v._id || '', 'deleteFile')
                                     } else {
                                         setIsFetching(true)
@@ -318,6 +323,8 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                 </button>}
                 <input className="w-full rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" type="password" name="" id="" placeholder="Password"
                 value={password} onChange={e => setPassword(e.target.value)}/>
+                <input className="w-full rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" type="text" name="" id="" placeholder="Permissions"
+                value={permissions.join(',')} onChange={e => setPermissions(e.target.value.split(','))}/>
                 <footer className="w-full flex flex-row items-center justify-between gap-2">
                     <button
                         disabled={isFetching}
@@ -341,7 +348,7 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                                         name, path,
                                         created: Date.now(),
                                         password,
-                                        roles: [],
+                                        roles: permissions,
                                         ...attr
                                     }
                                 })
@@ -368,6 +375,8 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                 value={e_name} onChange={e => setE_name(e.target.value)}/>
                 <input className="w-full rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" type="password" name="" id="" placeholder="Password"
                 value={e_password} onChange={e => setE_password(e.target.value)}/>
+                <input className="w-full rounded-md bg p-2 border border-1 border-gray-400 dark:border-neutral-700 bg-gray-200 dark:bg-neutral-900 hover:bg-gray-300 hover:dark:bg-neutral-800 placeholder:text-neutral-600 dark:placeholder:text-gray-400 font-semibold focus:outline-none text-lg transition-colors" type="text" name="" id="" placeholder="Permissions"
+                value={e_permissions.join(',')} onChange={e => setE_permissions(e.target.value.split(','))}/>
                 <footer className="w-full flex flex-row items-center justify-between gap-2">
                     <button
                         disabled={isFetching}
@@ -386,7 +395,7 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                                 body: JSON.stringify({
                                     c: selected[0] == 0 ? 'updateFolder' : 'updateFile',
                                     d: {_id: selected[0] == 0 ? folders.find(v => v._id == selected[1])?._id : files.find(v => v._id == selected[1])?._id},
-                                    m: {name: e_name, password: e_password}
+                                    m: {name: e_name, password: e_password, roles: e_permissions}
                                 })
                             }).then(res => res.json()).then(data => {
                                 setIsFetching(false)
@@ -443,7 +452,8 @@ export default function Explorer(props: {state: string, setState: Dispatch<SetSt
                                         setOnEdit(true)
                                         setE_name(pwTarget.split('%')[0])
                                         setE_password(pwsd)
-                                        setSelected([+pwTarget.split('%')[2], pwTarget.split('%')[1]])
+                                        setE_permissions(pwTarget.split('%')[2].split(','))
+                                        setSelected([+pwTarget.split('%')[3], pwTarget.split('%')[1]])
                                         break;
                                     case 'deleteFolder':
                                         setIsFetching(true)

@@ -77,6 +77,10 @@ export async function POST(request: Request) {
             const res = await roles.deleteOne({_id: new ObjectId(data._id)})
             return new Response(JSON.stringify({ok:true}))
         }
+        case 'updateRole':{
+            const res = await roles.updateOne({_id: new ObjectId(data._id)}, {$set: modifier})
+            return new Response(JSON.stringify({ok:true, data:res}))
+        }
         case 'listRoles':{
             const res = await roles.find({}).toArray()
             return new Response(JSON.stringify({ok:true, data:res}))

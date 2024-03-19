@@ -12,6 +12,10 @@ export default function Role(props: {state: string, setState: Dispatch<SetStateA
     const [search, setSearch] = useState("")
     const [onWindow, setOnWindow] = useState("")
     const [selected, setSelected] = useState<Role|null>(null)
+    const [e_name, setE_name] = useState("")
+    const [e_password, setE_password] = useState("")
+    const [e_permissions, setE_permissions] = useState<string[]>([])
+    const [e_errorMsg, setE_errorMsg] = useState("")
     
     useEffect(() => {
         if(once){
@@ -117,7 +121,10 @@ export default function Role(props: {state: string, setState: Dispatch<SetStateA
                                 }).then(res => res.json()).then(data => {
                                     setIsFetching(false)
                                     setOnWindow("update")
-                                    setSelected(data.data)
+                                    setE_name(data.data.name)
+                                    setE_password(data.data.password)
+                                    setE_permissions(data.data.permissions)
+                                    setSelected(data.data as Role)
                                 }).catch(err => console.error(err))
                             }
                         }
@@ -165,6 +172,7 @@ export default function Role(props: {state: string, setState: Dispatch<SetStateA
                 <p className="text-2xl font-semibold">Add Role</p>
                 <input type="text" placeholder="Name" className="p-2 border border-gray-300 rounded-lg" value={name} onChange={e => {setName(e.target.value);setErrorMsg('')}}/>
                 <input type="password" placeholder="Password" className="p-2 border border-gray-300 rounded-lg" value={password} onChange={e => {setPassword(e.target.value);setErrorMsg('')}}/>
+                <input type="text" placeholder="Permissions" className="p-2 border border-gray-300 rounded-lg" value={permissions.join(",")} onChange={e => {setPermissions(e.target.value.split(","));setErrorMsg('')}}/>
                 <p className="text-red-500">{errorMsg}</p>
                 <button disabled={isFetching} className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={() => {
@@ -188,6 +196,42 @@ export default function Role(props: {state: string, setState: Dispatch<SetStateA
                         .catch((err) => console.error(err))
                         .finally(() => setIsFetching(false))
                 }}>Add</button>
+            </div>
+        </div>}
+
+        {/* Update Role */}
+        {onWindow == "update" && <div className="absolute w-full h-full left-0 top-0 bg-[#00000055] flex flex-row items-center justify-center"
+        onMouseDown={e => {
+            if(e.target == e.currentTarget) setOnWindow("")
+        }}>
+            <div className="flex flex-col gap-4 p-8 bg-white rounded-lg">
+                <p className="text-2xl font-semibold">Update Role</p>
+                <input type="text" placeholder="Name" className="p-2 border border-gray-300 rounded-lg" value={e_name} onChange={e => {setE_name(e.target.value);setE_errorMsg('')}}/>
+                <input type="password" placeholder="Password" className="p-2 border border-gray-300 rounded-lg" value={e_password} onChange={e => {setE_password(e.target.value);setE_errorMsg('')}}/>
+                <input type="text" placeholder="Permissions" className="p-2 border border-gray-300 rounded-lg" value={e_permissions.join(",")} onChange={e => {setE_permissions(e.target.value.split(","));setE_errorMsg('')}}/>
+                <p className="text-red-500">{e_errorMsg}</p>
+                <button disabled={isFetching} className="rounded-md bg-neutral-800 dark:bg-gray-50 text-white dark:text-black p-3 text-md font-semibold hover:bg-neutral-700 hover:dark:bg-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => {
+                    setIsFetching(true)
+                    fetch("/api/controller", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({ c: "updateRole", d: selected, m: { name: e_name, password: e_password, permissions: e_permissions}}),
+                    })
+                        .then((res) => res.json())
+                        .then((res) => {
+                            if (res.ok) {
+                                setOnWindow("")
+                                reload()
+                            } else {
+                                setErrorMsg("Role already exists")
+                            }
+                        })
+                        .catch((err) => console.error(err))
+                        .finally(() => setIsFetching(false))
+                }}>Update</button>
             </div>
         </div>}
     </main>)
